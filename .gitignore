@@ -1,3 +1,6 @@
+private*
+http_access.log
+
 # Local .terraform directories
 **/.terraform/*
 
