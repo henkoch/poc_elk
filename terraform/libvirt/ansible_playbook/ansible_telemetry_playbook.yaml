@@ -1,0 +1,109 @@
+---
+- name: playbook to install telemetry host for k8s
+  hosts: localhost
+  tasks:
+    - name: use apt to update its cache
+      become: yes
+      apt:
+        update_cache: yes
+    - name: install setfacl
+      become: yes
+      apt:
+        update_cache: true
+        package: acl
+    - name: install some necessary software
+      become: yes
+      apt:
+        update_cache: true
+        package: ['prometheus-node-exporter', 'vim','wget']
+    - name: Install ELK
+      # https://www.elastic.co/guide/en/elastic-stack/current/installing-elastic-stack.html
+      # https://www.elastic.co/guide/en/kibana/8.12/deb.html
+      block:      
+        - name: install pkgs to allow apt to use a repository over HTTPS
+          become: yes
+          apt:
+            update_cache: true
+            package: ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg2']
+        - name: Add elastic.co keyring
+          become: yes
+          ansible.builtin.apt_key:
+            url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+            keyring: /usr/share/keyrings/elasticsearch-keyring.gpg
+        - name: Add elasticsearch repo
+          become: yes
+          ansible.builtin.apt_repository:
+            repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/7.x/apt stable main"
+            state: present
+        - name: install elasticsearch
+          become: yes
+          apt:
+            update_cache: true
+            package: elasticsearch
+        - name: install filebeat
+          become: yes
+          apt:
+            update_cache: true
+            package: filebeat
+        - name: Copy filebeat.yml to /etc/filebeat/filebeat.yml
+          copy:
+            src: filebeat.yml
+            dest: /etc/filebeat/filebeat.yml
+            owner: root
+            group: root
+            mode: '0644'
+        - name: Enable filebeat service and ensure it is running
+          become: yes
+          ansible.builtin.service:
+            name: filebeat
+            enabled: true
+            state: started
+        - name: install logstash
+          become: yes
+          apt:
+            update_cache: true
+            package: logstash
+        - name: Copy logstash.yml to /etc/logstash/logstash.yml
+          copy:
+            src: logstash.yml
+            dest: /etc/logstash/logstash.yml
+            owner: root
+            group: root
+            mode: '0644'
+        - name: Copy logstash.conf to /etc/logstash/conf.d/logstash.conf
+          copy:
+            src: logstash.conf
+            dest: /etc/logstash/conf.d/logstash.conf
+            owner: root
+            group: root
+            mode: '0644'
+        - name: Enable logstash service and ensure it is running
+          become: yes
+          ansible.builtin.service:
+            name: logstash
+            enabled: true
+            state: started
+        - name: Enable elasticsearch service and ensure it is running
+          become: yes
+          ansible.builtin.service:
+            name: elasticsearch
+            enabled: true
+            state: started
+        - name: install kibana
+          become: yes
+          apt:
+            update_cache: true
+            package: kibana
+        - name: Copy kibana.yml to /etc/kibana/kibana.yml
+          copy:
+            src: kibana.yml
+            dest: /etc/kibana/kibana.yml
+            owner: root
+            group: root
+            mode: '0644'
+        - name: Enable kibana service and ensure it is running
+          become: yes
+          ansible.builtin.service:
+            name: kibana
+            enabled: true
+            state: started

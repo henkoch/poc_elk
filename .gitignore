@@ -1,3 +1,8 @@
+private_*
+ContextSwitch.txt
+
+.terraform.lock.hcl
+
 # Local .terraform directories
 **/.terraform/*
 
