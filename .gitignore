@@ -3,6 +3,8 @@ ContextSwitch.txt
 
 .terraform.lock.hcl
 
+*.log
+
 # Local .terraform directories
 **/.terraform/*
 
