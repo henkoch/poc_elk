@@ -1,0 +1,63 @@
+#cloud-config
+
+fqdn: ${vm_hostname}
+
+# Add groups to the system
+groups:
+  - ansible
+
+# Add users to the system. Users are added after groups are added.
+users:
+  - default
+  - name: ansible
+    gecos: ansible
+    shell: /bin/bash
+    primary_group: ansible
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ${ansible_ssh_public_key}
+
+# install packages
+packages:
+  - ansible
+  - net-tools # for debugging
+
+# provide the CNI deployment file.
+#  https://cloudinit.readthedocs.io/en/latest/reference/modules.html#write-files
+write_files:
+  - path: /home/ansible/labclient_playbook.yaml
+    content: !!binary |
+      ${ansible_playbook_file_base64}
+    permissions: '0640'
+  - path: /home/ansible/files/filebeat.yml
+    content: !!binary |
+      ${ansible_file_filebeat_yaml_base64}
+    permissions: '0640'
+  - path: /home/ansible/files/logstash.yml
+    content: !!binary |
+      ${ansible_file_logstash_yaml_base64}
+    permissions: '0640'
+  - path: /home/ansible/files/logstash.conf
+    content: !!binary |
+      ${ansible_file_logstash_conf_base64}
+    permissions: '0640'
+  - path: /home/ansible/files/elasticsearch.yml
+    content: !!binary |
+      ${ansible_file_elasticsearch_yaml_base64}
+    permissions: '0640'
+  - path: /home/ansible/files/kibana.yml
+    content: !!binary |
+      ${ansible_file_kibana_yaml_base64}
+    permissions: '0640'
+
+# 
+runcmd:
+  - date > /home/ansible/DONE.txt
+  - chown -R ansible:ansible /home/ansible
+  - ansible-playbook labclient_playbook.yaml
+  - cp /var/log/cloud-init-output.log /home/ansible
+  - id >> DONE.txt
+  - echo "0.1.1" >> DONE.txt
+  - date >> DONE.txt
